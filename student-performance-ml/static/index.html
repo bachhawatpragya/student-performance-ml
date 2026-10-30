@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Student Performance Prediction System using Linear Regression, R² Evaluation, and MongoDB Storage">
+  <title>Student Performance AI — Linear Regression & MongoDB CA2</title>
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js for High-Performance Dynamic Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Top Header & System Status Bar -->
+    <header class="app-header">
+      <div class="header-branding">
+        <div class="logo-badge">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="header-title">Student Performance Predictor</h1>
+          <p class="header-subtitle">MongoDB CA2 &bull; Linear Regression Model &bull; $R^2$ Score Evaluation</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div id="mongo-status-badge" class="status-pill status-connecting">
+          <span class="status-dot"></span>
+          <span id="mongo-status-text">Connecting to MongoDB...</span>
+        </div>
+        <button id="theme-toggle-btn" class="btn btn-secondary" title="Toggle Light / Dark Mode">
+          <svg id="theme-icon-sun" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg id="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <span id="theme-btn-text">Light Mode</span>
+        </button>
+        <button id="retrain-btn" class="btn btn-secondary" title="Retrain model & refresh MongoDB predictions">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span id="retrain-btn-text">Retrain & Sync</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs" role="tablist">
+      <button class="nav-tab active" data-tab="tab-dashboard" id="tab-btn-dashboard" role="tab">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        <span>Model & R² Overview</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-visualizations" id="tab-btn-visualizations" role="tab">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        <span>Visualizations & Impacts</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-predict" id="tab-btn-predict" role="tab">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="m10 8 6 4-6 4V8z"></path></svg>
+        <span>Interactive Predictor</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-database" id="tab-btn-database" role="tab">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+        <span>MongoDB Explorer</span>
+      </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- TAB 1: MODEL & R² SCORE OVERVIEW -->
+      <section id="tab-dashboard" class="tab-pane active" role="tabpanel">
+        
+        <!-- Key Metrics Cards Banner -->
+        <div class="metrics-grid">
+          
+          <div class="metric-card highlight-card">
+            <div class="metric-icon-wrap r2-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+            </div>
+            <div class="metric-body">
+              <span class="metric-label">Linear Regression R² Score</span>
+              <div class="metric-value-row">
+                <span id="metric-r2" class="metric-value">0.7241</span>
+                <span class="metric-badge">72.4% Variance Explained</span>
+              </div>
+              <p class="metric-note">Target: Final Mathematics Grade ($G3$, 0–20 scale)</p>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon-wrap mae-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <div class="metric-body">
+              <span class="metric-label">Mean Absolute Error (MAE)</span>
+              <div class="metric-value-row">
+                <span id="metric-mae" class="metric-value">1.6467</span>
+                <span class="metric-unit">grade points</span>
+              </div>
+              <p class="metric-note">Average deviation from actual student grade</p>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon-wrap rmse-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+            </div>
+            <div class="metric-body">
+              <span class="metric-label">Classification Accuracy</span>
+              <div class="metric-value-row">
+                <span id="metric-accuracy" class="metric-value">86.1%</span>
+                <span class="metric-unit">Logistic Regression</span>
+              </div>
+              <p class="metric-note">Performance Tier: Low, Medium, High</p>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon-wrap db-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+            </div>
+            <div class="metric-body">
+              <span class="metric-label">MongoDB Dataset Size</span>
+              <div class="metric-value-row">
+                <span id="metric-total-students" class="metric-value">395</span>
+                <span class="metric-unit">students</span>
+              </div>
+              <p class="metric-note">316 Train (80%) / 79 Test (20%) split</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Model Evaluation Summary: Regression & Classification -->
+        <div class="grid-two-col">
+          
+          <!-- Regression Models Card -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">1. Regression Models (Grade Prediction)</h2>
+              <span class="badge badge-accent">Predicts Final Grade G3 (0–20)</span>
+            </div>
+            
+            <p class="card-description">
+              Trained to predict continuous student final grades. Evaluated using <strong>$R^2$ Score</strong> (variance explained) and <strong>MAE</strong> (mean absolute error).
+            </p>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Model</th>
+                    <th>R² Score</th>
+                    <th>MAE</th>
+                    <th>RMSE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="highlight-row">
+                    <td><strong>Linear Regression</strong></td>
+                    <td class="font-mono text-bold text-accent">0.7241</td>
+                    <td class="font-mono">1.6467</td>
+                    <td class="font-mono">2.3784</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Random Forest</strong></td>
+                    <td class="font-mono">0.8071</td>
+                    <td class="font-mono">1.2033</td>
+                    <td class="font-mono">1.9886</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="equation-box" style="margin-top: 18px;">
+              <div class="equation-header">Linear Regression Equation:</div>
+              <div class="equation-math">
+                G3 = 10.80 + &sum; (&beta;<sub>i</sub> &times; Feature<sub>i</sub>)
+              </div>
+              <div class="equation-details">
+                <div class="equation-item">
+                  <span class="eq-label">Strongest Positive Impact:</span>
+                  <span id="top-pos-feature" class="eq-val tag-pos">G2 (Second Period Grade)</span>
+                </div>
+                <div class="equation-item">
+                  <span class="eq-label">Strongest Negative Impact:</span>
+                  <span id="top-neg-feature" class="eq-val tag-neg">Past Class Failures</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Classification Models Card -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">2. Classification Models (Performance Tiers)</h2>
+              <span class="badge badge-primary">Tiers: Low / Medium / High</span>
+            </div>
+
+            <p class="card-description">
+              Classifies students into 3 academic tiers: <strong>Low</strong> (&lt;10), <strong>Medium</strong> (10–14), and <strong>High</strong> (&ge;15). Evaluated using <strong>Accuracy, Precision, Recall, and F1-Score</strong>.
+            </p>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Model</th>
+                    <th>Accuracy</th>
+                    <th>Precision</th>
+                    <th>Recall</th>
+                    <th>F1-Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="highlight-row">
+                    <td><strong>Logistic Regression</strong></td>
+                    <td class="font-mono text-bold text-accent">86.08%</td>
+                    <td class="font-mono">0.8600</td>
+                    <td class="font-mono">0.8685</td>
+                    <td class="font-mono">0.8629</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Decision Tree</strong></td>
+                    <td class="font-mono">84.81%</td>
+                    <td class="font-mono">0.8504</td>
+                    <td class="font-mono">0.8745</td>
+                    <td class="font-mono">0.8610</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="tier-legend-box" style="margin-top: 18px;">
+              <div class="equation-header">Classification Performance Tiers:</div>
+              <div class="tier-legend-items">
+                <div class="tier-pill tier-low">Low (&lt; 10)</div>
+                <div class="tier-pill tier-medium">Medium (10 – 14)</div>
+                <div class="tier-pill tier-high">High (&ge; 15)</div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- TAB 2: VISUALIZATIONS & FEATURE IMPACTS -->
+      <section id="tab-visualizations" class="tab-pane" role="tabpanel">
+        <div class="section-header-row">
+          <div>
+            <h2 class="section-title">Visualizing Factor Impacts on Student Performance</h2>
+            <p class="section-desc">Analyzing how student demographics, attendance, study habits, and previous grades drive final results ($G3$)</p>
+          </div>
+          <div class="chart-toggle-group">
+            <button class="btn btn-sm btn-outline active" data-vis-type="interactive" id="btn-show-interactive">Interactive Charts</button>
+            <button class="btn btn-sm btn-outline" data-vis-type="plots" id="btn-show-plots">Rendered Plot Artifacts</button>
+          </div>
+        </div>
+
+        <!-- Interactive Visualizations Container -->
+        <div id="interactive-charts-view" class="charts-grid">
+          
+          <!-- Chart 1: Actual vs Predicted -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Linear Regression: Actual vs. Predicted (R² = 0.7241)</h3>
+              <span class="chart-badge">Held-Out Test Set</span>
+            </div>
+            <div class="chart-canvas-wrap">
+              <canvas id="actualVsPredChart"></canvas>
+            </div>
+            <p class="chart-caption">Points clustered tightly along the red identity line confirm strong predictive accuracy with 72.4% variance explained.</p>
+          </div>
+
+          <!-- Chart 2: Top Coefficients -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Linear Regression Top Feature Coefficients</h3>
+              <span class="chart-badge">Feature Weights ($\beta$)</span>
+            </div>
+            <div class="chart-canvas-wrap">
+              <canvas id="coefficientsChart"></canvas>
+            </div>
+            <p class="chart-caption">Green bars indicate features that raise predicted grades; red bars indicate factors that drag down academic performance.</p>
+          </div>
+
+          <!-- Chart 3: Study Time Impact -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Weekly Study Time vs. Mean Final Grade</h3>
+              <span class="chart-badge">Study Habits</span>
+            </div>
+            <div class="chart-canvas-wrap">
+              <canvas id="studyTimeChart"></canvas>
+            </div>
+            <p class="chart-caption">Students dedicating over 5 to 10 hours weekly consistently outperform peers with lower study allocation.</p>
+          </div>
+
+          <!-- Chart 4: Prior Grades Impact -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Past Failures vs. Average Final Grade</h3>
+              <span class="chart-badge">Academic History</span>
+            </div>
+            <div class="chart-canvas-wrap">
+              <canvas id="failuresChart"></canvas>
+            </div>
+            <p class="chart-caption">Each historical course failure causes an immediate drop in expected final grade.</p>
+          </div>
+
+        </div>
+
+        <!-- Rendered High-Res Matplotlib Artifacts View (Hidden by default) -->
+        <div id="rendered-plots-view" class="plots-grid hidden">
+          <div class="plot-item">
+            <h4>1. Actual vs. Predicted Grades with R² Annotation</h4>
+            <img src="/images/actual_vs_predicted.png" alt="Actual vs Predicted Grades" class="artifact-img" loading="lazy">
+          </div>
+          <div class="plot-item">
+            <h4>2. Four-Panel Student Factor Impact Analysis</h4>
+            <img src="/images/feature_impacts.png" alt="Feature Impacts on Student Grade" class="artifact-img" loading="lazy">
+          </div>
+          <div class="plot-item">
+            <h4>3. Linear Regression Feature Coefficients ($\beta_i$)</h4>
+            <img src="/images/linear_coefficients.png" alt="Linear Regression Coefficients" class="artifact-img" loading="lazy">
+          </div>
+        </div>
+
+      </section>
+
+      <!-- TAB 3: LIVE INTERACTIVE PREDICTOR -->
+      <section id="tab-predict" class="tab-pane" role="tabpanel">
+        <div class="grid-prediction">
+          
+          <!-- Input Form Column -->
+          <div class="card predictor-form-card">
+            <div class="card-header">
+              <h2 class="card-title">Student Profile Parameters</h2>
+              <button type="button" id="btn-fill-sample" class="btn btn-sm btn-ghost">Load Sample Student</button>
+            </div>
+            <form id="prediction-form" class="predictor-form">
+              
+              <div class="form-section-title">Academic History &amp; Testing (Highest Coefficients)</div>
+              
+              <div class="form-row-two">
+                <div class="form-group">
+                  <label for="inp-g1">First Period Grade (G1): <span id="val-g1" class="slider-val">12</span> / 20</label>
+                  <input type="range" id="inp-g1" min="0" max="20" step="0.5" value="12" class="slider-input">
+                </div>
+                <div class="form-group">
+                  <label for="inp-g2">Second Period Grade (G2): <span id="val-g2" class="slider-val">12</span> / 20</label>
+                  <input type="range" id="inp-g2" min="0" max="20" step="0.5" value="12" class="slider-input">
+                </div>
+              </div>
+
+              <div class="form-row-two">
+                <div class="form-group">
+                  <label for="inp-failures">Past Class Failures: <span id="val-failures" class="slider-val">0</span></label>
+                  <input type="range" id="inp-failures" min="0" max="3" step="1" value="0" class="slider-input">
+                </div>
+                <div class="form-group">
+                  <label for="inp-absences">School Absences (days): <span id="val-absences" class="slider-val">4</span></label>
+                  <input type="range" id="inp-absences" min="0" max="50" step="1" value="4" class="slider-input">
+                </div>
+              </div>
+
+              <div class="form-section-title">Habits &amp; Learning Environment</div>
+              
+              <div class="form-row-three">
+                <div class="form-group">
+                  <label for="inp-studytime">Weekly Study Time</label>
+                  <select id="inp-studytime" class="form-select">
+                    <option value="1">&lt; 2 hours / wk</option>
+                    <option value="2" selected>2 to 5 hours / wk</option>
+                    <option value="3">5 to 10 hours / wk</option>
+                    <option value="4">&gt; 10 hours / wk</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="inp-schoolsup">School Academic Support</label>
+                  <select id="inp-schoolsup" class="form-select">
+                    <option value="no" selected>No</option>
+                    <option value="yes">Yes</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="inp-famsup">Family Educational Support</label>
+                  <select id="inp-famsup" class="form-select">
+                    <option value="yes" selected>Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row-three">
+                <div class="form-group">
+                  <label for="inp-higher">Aims for Higher Education</label>
+                  <select id="inp-higher" class="form-select">
+                    <option value="yes" selected>Yes (University)</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="inp-internet">Home Internet Access</label>
+                  <select id="inp-internet" class="form-select">
+                    <option value="yes" selected>Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="inp-paid">Extra Paid Classes</label>
+                  <select id="inp-paid" class="form-select">
+                    <option value="no" selected>No</option>
+                    <option value="yes">Yes</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-section-title">Demographics &amp; Background</div>
+
+              <div class="form-row-four">
+                <div class="form-group">
+                  <label for="inp-age">Age</label>
+                  <input type="number" id="inp-age" min="15" max="22" value="16" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label for="inp-sex">Sex</label>
+                  <select id="inp-sex" class="form-select">
+                    <option value="F" selected>Female</option>
+                    <option value="M">Male</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="inp-school">School</label>
+                  <select id="inp-school" class="form-select">
+                    <option value="GP" selected>Gabriel Pereira (GP)</option>
+                    <option value="MS">Mousinho da Silveira (MS)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="inp-address">Address Type</label>
+                  <select id="inp-address" class="form-select">
+                    <option value="U" selected>Urban</option>
+                    <option value="R">Rural</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" id="btn-predict-submit" class="btn btn-primary btn-block">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                  Calculate Predicted Final Grade (G3)
+                </button>
+              </div>
+
+            </form>
+          </div>
+
+          <!-- Prediction Result Column -->
+          <div class="prediction-result-panel">
+            
+            <div class="card result-card">
+              <div class="result-header">
+                <h3>Linear Regression Prediction</h3>
+                <span id="result-timestamp" class="timestamp-text">Ready</span>
+              </div>
+
+              <!-- Radial Grade Gauge Display -->
+              <div class="grade-display-box">
+                <div class="gauge-ring-container">
+                  <svg class="gauge-svg" viewBox="0 0 160 160">
+                    <circle class="gauge-bg" cx="80" cy="80" r="68"></circle>
+                    <circle id="gauge-fill" class="gauge-bar" cx="80" cy="80" r="68" stroke-dasharray="427" stroke-dashoffset="150"></circle>
+                  </svg>
+                  <div class="gauge-inner-content">
+                    <div id="result-grade-val" class="grade-score">12.0</div>
+                    <div class="grade-max">out of 20</div>
+                  </div>
+                </div>
+                <div id="result-tier-badge" class="tier-pill tier-medium">
+                  Medium Performance (10–14)
+                </div>
+              </div>
+
+              <!-- Performance Summary Breakdown -->
+              <div class="result-breakdown">
+                <h4>Driver Analysis</h4>
+                <div class="breakdown-list">
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">Raw Model Output:</span>
+                    <span id="breakdown-raw-val" class="breakdown-val font-mono">11.98</span>
+                  </div>
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">Baseline Class Mean:</span>
+                    <span class="breakdown-val font-mono">10.42 / 20</span>
+                  </div>
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">Difference from Mean:</span>
+                    <span id="breakdown-diff-val" class="breakdown-val text-accent font-mono">+1.58</span>
+                  </div>
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">Classifier Verification:</span>
+                    <span id="breakdown-clf-tier" class="badge badge-primary">Medium</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="result-note">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <span>Predictions are computed live via Scikit-Learn Linear Regression pipeline trained on MongoDB records.</span>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 4: MONGODB EXPLORER -->
+      <section id="tab-database" class="tab-pane" role="tabpanel">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">MongoDB Live Student Records</h2>
+              <p class="card-subtitle">Collection: <code>student_performance_db.students</code></p>
+            </div>
+            <div class="table-search-row">
+              <input type="text" id="db-search-input" placeholder="Search by student_id or school..." class="form-input search-input">
+              <button id="btn-refresh-db" class="btn btn-sm btn-outline">Refresh</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Student ID</th>
+                  <th>School</th>
+                  <th>Sex</th>
+                  <th>Age</th>
+                  <th>Study Time</th>
+                  <th>Failures</th>
+                  <th>Absences</th>
+                  <th>G1</th>
+                  <th>G2</th>
+                  <th>Target G3</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="db-students-tbody">
+                <tr><td colspan="11" class="text-center">Loading MongoDB documents...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pagination-bar">
+            <span id="pagination-info">Showing 0 of 0 records</span>
+            <div class="pagination-buttons">
+              <button id="btn-prev-page" class="btn btn-sm btn-outline" disabled>Previous</button>
+              <button id="btn-next-page" class="btn btn-sm btn-outline">Next</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Document JSON Modal -->
+    <div id="json-modal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modal-title">MongoDB Document Inspector</h3>
+          <button id="btn-close-modal" class="btn-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <pre id="modal-json-content" class="json-code-block"></pre>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
