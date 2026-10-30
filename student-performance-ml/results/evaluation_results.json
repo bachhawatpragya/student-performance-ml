@@ -1,0 +1,45 @@
+{
+    "run_id": "20261030T051711242740Z",
+    "dataset": "UCI Student Performance - Mathematics",
+    "student_count": 395,
+    "regression": [
+        {
+            "model_name": "LinearRegression",
+            "metrics": {
+                "r2_score": 0.7241341236974019,
+                "mae": 1.6466656197147507,
+                "mse": 5.656642833231227,
+                "rmse": 2.3783697847961376
+            }
+        },
+        {
+            "model_name": "RandomForestRegressor",
+            "metrics": {
+                "r2_score": 0.8071440432057082,
+                "mae": 1.2032678048092817,
+                "mse": 3.95452050999505,
+                "rmse": 1.9885976239538883
+            }
+        }
+    ],
+    "classification": [
+        {
+            "model_name": "LogisticRegression",
+            "metrics": {
+                "accuracy": 0.8607594936708861,
+                "precision_macro": 0.8599890530925013,
+                "recall_macro": 0.8685110211426,
+                "f1_macro": 0.86290300262903
+            }
+        },
+        {
+            "model_name": "DecisionTreeClassifier",
+            "metrics": {
+                "accuracy": 0.8481012658227848,
+                "precision_macro": 0.8503854533266297,
+                "recall_macro": 0.874493927125506,
+                "f1_macro": 0.8610100485100486
+            }
+        }
+    ]
+}
