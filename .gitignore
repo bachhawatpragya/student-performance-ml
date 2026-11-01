@@ -33,3 +33,4 @@ desktop.ini
 *.tmp
 *.log
 .pytest_cache/
+generate_all_screenshots.py

@@ -1,7 +1,12 @@
 {
-    "run_id": "20261030T051711242740Z",
+    "run_id": "20261101T190739024535Z",
     "dataset": "UCI Student Performance - Mathematics",
     "student_count": 395,
+    "classification_categories": {
+        "Low": "G3 < 10",
+        "Medium": "10 <= G3 < 15",
+        "High": "G3 >= 15"
+    },
     "regression": [
         {
             "model_name": "LinearRegression",
